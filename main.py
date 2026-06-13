@@ -1,28 +1,42 @@
 from fastapi import FastAPI
 import os
 import psycopg2
+from psycopg2.extras import RealDictCursor
 
-app = FastAPI()
+app = FastAPI(
+    title="SZABIST DevOps Final Project",
+    description="Automated CI/CD Deployment Pipeline via GitHub Actions to AWS EC2",
+    version="1.0.0"
+)
+
+
+@app.get("/")
+def read_root():
+    return {
+        "status": "Success",
+        "message": "Welcome to my SZABIST DevOps Final Project Live on AWS!",
+        "environment": "Docker Container",
+        "pipeline": "GitHub Actions CI/CD"
+    }
+
 
 @app.get("/health")
 def health_check():
-   
-    db_status = "Disconnected"
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST", "db"),
-            database=os.getenv("POSTGRES_DB", "devops_db"),
-            user=os.getenv("POSTGRES_USER", "postgres"),
-            password=os.getenv("POSTGRES_PASSWORD", "postgres_pass"),
-            connect_timeout=3
-        )
-        db_status = "Connected to Database"
-        conn.close()
-    except Exception:
-        db_status = "Database connection failed"
+    return {"status": "healthy", "database": "configured"}
 
-    return {
-        "status": "healthy",
-        "student_registration_number": "2212252",
-        "database": db_status
-    }
+
+@app.get("/db-test")
+def test_db_connection():
+    try:
+        # Pulls from standard Docker environment variables
+        connection = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            database=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "password"),
+            cursor_factory=RealDictCursor
+        )
+        connection.close()
+        return {"database_status": "Connected successfully to PostgreSQL!"}
+    except Exception as e:
+        return {"database_status": "Disconnected", "error": str(e)}
