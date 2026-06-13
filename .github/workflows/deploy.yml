@@ -20,16 +20,20 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # Navigate to your project directory (or create it if it doesn't exist)
           mkdir -p ~/app
           cd ~/app
           
-          # Clone or pull latest code
+          # Pull latest code from GitHub
           if [ -d ".git" ]; then
             git pull origin main
           else
             git clone https://github.com/${{ github.repository }}.git .
           fi
           
-          # Restart your application (Example assuming Docker, modify if needed for your specific app setup)
-          # docker compose up -d --build
+          # Stop any old container running on port 80 so it doesn't clash
+          docker stop my-python-app || true
+          docker rm my-python-app || true
+          
+          # Build your Docker image and run it live on web port 80!
+          docker build -t my-python-app .
+          docker run -d --name my-python-app -p 80:5000 my-python-app
